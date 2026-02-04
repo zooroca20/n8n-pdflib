@@ -102,15 +102,13 @@ app.post('/fill-pdf', async (req, res) => {
         font
       });
 
-      // CONTADOR DE PÁGINAS
-      if (totalPaginas > 1) {
-        page.drawText(`${pageNumber}/${totalPaginas}`, {
-          x: 513,
-          y: 589,
-          size: regularFont,
-          font
-        });
-      }
+      // CONTADOR DE PÁGINAS (siempre visible)
+      page.drawText(`${pageNumber}/${totalPaginas}`, {
+        x: 513,
+        y: 589,
+        size: regularFont,
+        font
+      });
     };
 
     const drawAlbaranHeader = (page, albaran, fecha, y) => {
@@ -130,7 +128,6 @@ app.post('/fill-pdf', async (req, res) => {
     };
 
     const drawProductLine = (page, linea, y) => {
-      // CAJAS - Affinity: X=29.3, Y=265.7 → Código: X=29, Y=803-266=537
       if (linea.Cajas !== undefined && linea.Cajas !== null) {
         page.drawText(String(linea.Cajas), {
           x: 29,
@@ -140,7 +137,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // BRUTO - Affinity: X=62.4, Y=265.7 → Código: X=62, Y=537
       if (linea.Bruto) {
         page.drawText(String(linea.Bruto), {
           x: 62,
@@ -150,7 +146,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // TARA - Affinity: X=105.4, Y=265.7 → Código: X=105, Y=537
       if (linea.Tara) {
         page.drawText(String(linea.Tara), {
           x: 105,
@@ -160,7 +155,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // NETO - Affinity: X=141.8, Y=265.7 → Código: X=142, Y=537
       if (linea.Neto) {
         page.drawText(String(linea.Neto), {
           x: 142,
@@ -170,7 +164,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // ARTÍCULO - Affinity: X=187, Y=265.7 → Código: X=187, Y=537
       if (linea.Articulo) {
         page.drawText(String(linea.Articulo), {
           x: 187,
@@ -180,7 +173,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // PRECIO - Affinity: X=341.9, Y=265.7 → Código: X=342, Y=537
       if (linea.Precio) {
         page.drawText(String(linea.Precio), {
           x: 342,
@@ -190,7 +182,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // IMPORTE - Affinity: X=382.9, Y=265.7 → Código: X=383, Y=537
       if (linea.Importe) {
         page.drawText(String(linea.Importe), {
           x: 383,
@@ -200,7 +191,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // ENT_RET - Affinity: X=444.5, Y=265.7 → Código: X=445, Y=537
       if (linea.ENT_RET) {
         page.drawText(String(linea.ENT_RET), {
           x: 445,
@@ -210,7 +200,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // C_BV - Affinity: X=483.8, Y=265.7 → Código: X=484, Y=537
       if (linea.C_BV) {
         page.drawText(String(linea.C_BV), {
           x: 484,
@@ -220,7 +209,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // PRECIO2 - Affinity: X=520, Y=265.7 → Código: X=520, Y=537
       if (linea.Precio2) {
         page.drawText(String(linea.Precio2), {
           x: 520,
@@ -251,7 +239,6 @@ app.post('/fill-pdf', async (req, res) => {
       pageNumber++;
       currentPage = nuevoPdfDoc.getPages()[pageNumber - 1];
       fillHeader(currentPage, pageNumber, totalPaginas);
-      // Primera línea de productos: Y=537 (803-266)
       currentY = 537;
       lineasEnPagina = 0;
     };
