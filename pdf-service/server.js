@@ -42,6 +42,12 @@ app.post('/fill-pdf', async (req, res) => {
     let albaranActual = null;
     
     lineasArray.forEach(linea => {
+      // DEPURACIÓN: Ver qué datos tienen las líneas
+      console.log('Línea:', {
+        Albaran_Factura: linea.Albaran_Factura,
+        FechaAlbaran_Factura: linea.FechaAlbaran_Factura
+      });
+
       const albaranKey = `${linea.Albaran_Factura || ''}_${linea.FechaAlbaran_Factura || ''}`;
       
       if (!albaranActual || albaranActual.key !== albaranKey) {
@@ -52,6 +58,7 @@ app.post('/fill-pdf', async (req, res) => {
           lineas: []
         };
         lineasPorAlbaran.push(albaranActual);
+        console.log('Nuevo albarán detectado:', albaranActual.albaran, albaranActual.fecha);
       }
       
       albaranActual.lineas.push(linea);
@@ -60,7 +67,6 @@ app.post('/fill-pdf', async (req, res) => {
     console.log(`Total albaranes: ${lineasPorAlbaran.length}`);
 
     const fillHeader = (page, pageNumber, totalPaginas) => {
-      // NÚMERO DE FACTURA
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
           x: 41,
@@ -70,7 +76,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // FECHA FACTURA
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
@@ -81,7 +86,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // FORMA DE PAGO
       if (fields.forma_pago) {
         page.drawText(String(fields.forma_pago), {
           x: 175,
@@ -91,7 +95,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // VENDEDOR (siempre "1 Empresa")
       page.drawText('1 Empresa', {
         x: 374,
         y: 589,
@@ -99,7 +102,6 @@ app.post('/fill-pdf', async (req, res) => {
         font
       });
 
-      // CONTADOR DE PÁGINAS
       if (totalPaginas > 1) {
         page.drawText(`${pageNumber}/${totalPaginas}`, {
           x: 513,
@@ -111,8 +113,13 @@ app.post('/fill-pdf', async (req, res) => {
     };
 
     const drawAlbaranHeader = (page, albaran, fecha, y) => {
+      // Formatear fecha (quitar la hora si viene con timestamp)
       const fechaFormateada = String(fecha).split('T')[0];
-      const texto = `**** Albarán    ${albaran}     del    ${fechaFormateada}   **   Pedido 0 Fecha 0 *****`;
+      
+      // CAMBIO: "Albarán" → "Albaran" (sin acento)
+      const texto = `**** Albaran    ${albaran}     del    ${fechaFormateada}   **   Pedido 0 Fecha 0 *****`;
+      
+      console.log('Dibujando cabecera albarán:', texto);
       
       page.drawText(texto, {
         x: 54,
@@ -187,7 +194,6 @@ app.post('/fill-pdf', async (req, res) => {
       }
     };
 
-    // CALCULAR TOTAL DE PÁGINAS
     let totalLineasConCabeceras = 0;
     lineasPorAlbaran.forEach(grupo => {
       totalLineasConCabeceras += 1 + grupo.lineas.length;
@@ -202,7 +208,6 @@ app.post('/fill-pdf', async (req, res) => {
     let lineasEnPagina = 0;
     let pageNumber = 0;
 
-    // FUNCIÓN ASYNC PARA CREAR NUEVA PÁGINA
     const crearNuevaPagina = async () => {
       const [paginaCopia] = await nuevoPdfDoc.copyPages(pdfDoc, [0]);
       nuevoPdfDoc.addPage(paginaCopia);
@@ -215,19 +220,15 @@ app.post('/fill-pdf', async (req, res) => {
 
     await crearNuevaPagina();
 
-    // DIBUJAR ALBARANES Y LÍNEAS
     for (const grupo of lineasPorAlbaran) {
-      // Verificar si necesitamos nueva página para la cabecera
       if (lineasEnPagina >= LINEAS_POR_PAGINA) {
         await crearNuevaPagina();
       }
 
-      // Dibujar cabecera del albarán
       drawAlbaranHeader(currentPage, grupo.albaran, grupo.fecha, currentY);
       currentY -= 15;
       lineasEnPagina++;
 
-      // Dibujar líneas del albarán
       for (const linea of grupo.lineas) {
         if (lineasEnPagina >= LINEAS_POR_PAGINA) {
           await crearNuevaPagina();
