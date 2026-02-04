@@ -70,30 +70,32 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     // LÍNEAS DE PRODUCTOS
-    const lineas = fields.lineas || [];
+    let lineas = fields.lineas || [];
     console.log("Lineas recibidas:", lineas);
     console.log("Tipo de lineas:", typeof lineas);
-    console.log("Es array?:", Array.isArray(lineas));
 
     let lineasArray = [];
     try {
       if (typeof lineas === 'string') {
         lineasArray = JSON.parse(lineas);
+      } else if (Array.isArray(lineas)) {
+        lineasArray = lineas;
       } else {
-        lineasArray = lineas || [];
+        lineasArray = [];
       }
     } catch (e) {
       console.error("Error parseando lineas:", e);
+      lineasArray = [];
     }
 
-    console.log("Cantidad de lineas:", lineasArray.length);
+    console.log("Cantidad de lineas parseadas:", lineasArray.length);
 
     const startY = height - 335;
     const lineHeight = 15;
 
     lineasArray.forEach((linea, index) => {
       const y = startY - (index * lineHeight);
-      console.log(`Línea ${index}:`, linea);
+      console.log(`Escribiendo línea ${index} en Y=${y}:`, linea);
 
       // Cajas
       if (linea.Cajas !== undefined && linea.Cajas !== null) {
