@@ -41,23 +41,23 @@ app.post('/fill-pdf', async (req, res) => {
 
     const fillHeader = (page) => {
       // NÚMERO DE FACTURA
-      // Affinity: X=29.2, Y=207.8 → Código: X=29, Y=803-208=595
+      // Affinity: X=41.1, Y=211.4 → Código: X=41, Y=803-211=592
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
-          x: 29,
-          y: 595,
+          x: 41,
+          y: 592,
           size: regularFont,
           font
         });
       }
 
       // FECHA FACTURA
-      // Affinity: X=84.7, Y=207.8 → Código: X=85, Y=803-208=595
+      // Affinity: X=82.4, Y=211.4 → Código: X=82, Y=803-211=592
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
-          x: 85,
-          y: 595,
+          x: 82,
+          y: 592,
           size: regularFont,
           font
         });
@@ -178,7 +178,7 @@ app.post('/fill-pdf', async (req, res) => {
       if (totalPaginas > 1) {
         currentPage.drawText(`Página ${pageIndex + 1} de ${totalPaginas}`, {
           x: 500,
-          y: 595,
+          y: 592,
           size: smallFont,
           font
         });
