@@ -33,6 +33,7 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     const LINEAS_POR_PAGINA = 11;
+    const ALTURA_PAGINA = 803;
 
     console.log(`Total líneas: ${lineasArray.length}`);
 
@@ -41,15 +42,9 @@ app.post('/fill-pdf', async (req, res) => {
     let albaranActual = null;
     
     lineasArray.forEach(linea => {
-      // USAR LOS NOMBRES CORRECTOS DE LOS CAMPOS
       const numAlbaran = linea.Albaran_Factura || '';
       const fechaAlbaran = linea.FechaAlbaran_Factura || '';
       
-      console.log('Procesando línea:', {
-        Albaran_Factura: numAlbaran,
-        FechaAlbaran_Factura: fechaAlbaran
-      });
-
       const albaranKey = `${numAlbaran}_${fechaAlbaran}`;
       
       if (!albaranActual || albaranActual.key !== albaranKey) {
@@ -60,7 +55,6 @@ app.post('/fill-pdf', async (req, res) => {
           lineas: []
         };
         lineasPorAlbaran.push(albaranActual);
-        console.log('Nuevo grupo albarán:', { albaran: numAlbaran, fecha: fechaAlbaran });
       }
       
       albaranActual.lineas.push(linea);
@@ -69,6 +63,7 @@ app.post('/fill-pdf', async (req, res) => {
     console.log(`Total albaranes agrupados: ${lineasPorAlbaran.length}`);
 
     const fillHeader = (page, pageNumber, totalPaginas) => {
+      // NÚMERO DE FACTURA
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
           x: 41,
@@ -78,6 +73,7 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
+      // FECHA FACTURA
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
@@ -88,6 +84,7 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
+      // FORMA DE PAGO
       if (fields.forma_pago) {
         page.drawText(String(fields.forma_pago), {
           x: 175,
@@ -97,6 +94,7 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
+      // VENDEDOR (siempre "1 Empresa")
       page.drawText('1 Empresa', {
         x: 374,
         y: 589,
@@ -104,6 +102,7 @@ app.post('/fill-pdf', async (req, res) => {
         font
       });
 
+      // CONTADOR DE PÁGINAS
       if (totalPaginas > 1) {
         page.drawText(`${pageNumber}/${totalPaginas}`, {
           x: 513,
@@ -115,16 +114,12 @@ app.post('/fill-pdf', async (req, res) => {
     };
 
     const drawAlbaranHeader = (page, albaran, fecha, y) => {
-      // Formatear fecha (solo YYYY-MM-DD)
       let fechaFormateada = String(fecha);
       if (fechaFormateada.includes('T')) {
         fechaFormateada = fechaFormateada.split('T')[0];
       }
       
-      // Construir texto SIN acento en Albaran
       const texto = `**** Albaran    ${albaran}     del    ${fechaFormateada}   **   Pedido 0 Fecha 0 *****`;
-      
-      console.log('Dibujando cabecera:', texto);
       
       page.drawText(texto, {
         x: 54,
@@ -135,62 +130,99 @@ app.post('/fill-pdf', async (req, res) => {
     };
 
     const drawProductLine = (page, linea, y) => {
+      // CAJAS - Affinity: X=29.3, Y=265.7 → Código: X=29, Y=803-266=537
       if (linea.Cajas !== undefined && linea.Cajas !== null) {
         page.drawText(String(linea.Cajas), {
-          x: 52,
+          x: 29,
           y,
           size: smallFont,
           font
         });
       }
 
+      // BRUTO - Affinity: X=62.4, Y=265.7 → Código: X=62, Y=537
       if (linea.Bruto) {
         page.drawText(String(linea.Bruto), {
-          x: 118,
+          x: 62,
           y,
           size: smallFont,
           font
         });
       }
 
+      // TARA - Affinity: X=105.4, Y=265.7 → Código: X=105, Y=537
       if (linea.Tara) {
         page.drawText(String(linea.Tara), {
-          x: 183,
+          x: 105,
           y,
           size: smallFont,
           font
         });
       }
 
+      // NETO - Affinity: X=141.8, Y=265.7 → Código: X=142, Y=537
       if (linea.Neto) {
         page.drawText(String(linea.Neto), {
-          x: 245,
+          x: 142,
           y,
           size: smallFont,
           font
         });
       }
 
+      // ARTÍCULO - Affinity: X=187, Y=265.7 → Código: X=187, Y=537
       if (linea.Articulo) {
         page.drawText(String(linea.Articulo), {
-          x: 320,
+          x: 187,
           y,
           size: smallFont,
           font
         });
       }
 
+      // PRECIO - Affinity: X=341.9, Y=265.7 → Código: X=342, Y=537
       if (linea.Precio) {
         page.drawText(String(linea.Precio), {
-          x: 485,
+          x: 342,
           y,
           size: smallFont,
           font
         });
       }
 
+      // IMPORTE - Affinity: X=382.9, Y=265.7 → Código: X=383, Y=537
       if (linea.Importe) {
         page.drawText(String(linea.Importe), {
+          x: 383,
+          y,
+          size: smallFont,
+          font
+        });
+      }
+
+      // ENT_RET - Affinity: X=444.5, Y=265.7 → Código: X=445, Y=537
+      if (linea.ENT_RET) {
+        page.drawText(String(linea.ENT_RET), {
+          x: 445,
+          y,
+          size: smallFont,
+          font
+        });
+      }
+
+      // C_BV - Affinity: X=483.8, Y=265.7 → Código: X=484, Y=537
+      if (linea.C_BV) {
+        page.drawText(String(linea.C_BV), {
+          x: 484,
+          y,
+          size: smallFont,
+          font
+        });
+      }
+
+      // PRECIO2 - Affinity: X=520, Y=265.7 → Código: X=520, Y=537
+      if (linea.Precio2) {
+        page.drawText(String(linea.Precio2), {
           x: 520,
           y,
           size: smallFont,
@@ -219,7 +251,8 @@ app.post('/fill-pdf', async (req, res) => {
       pageNumber++;
       currentPage = nuevoPdfDoc.getPages()[pageNumber - 1];
       fillHeader(currentPage, pageNumber, totalPaginas);
-      currentY = 543;
+      // Primera línea de productos: Y=537 (803-266)
+      currentY = 537;
       lineasEnPagina = 0;
     };
 
@@ -230,8 +263,6 @@ app.post('/fill-pdf', async (req, res) => {
         await crearNuevaPagina();
       }
 
-      console.log('Dibujando grupo:', { albaran: grupo.albaran, fecha: grupo.fecha, numLineas: grupo.lineas.length });
-      
       drawAlbaranHeader(currentPage, grupo.albaran, grupo.fecha, currentY);
       currentY -= 15;
       lineasEnPagina++;
