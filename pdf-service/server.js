@@ -39,6 +39,9 @@ app.post('/fill-pdf', async (req, res) => {
 
     console.log(`Total líneas: ${totalLineas}, Total páginas necesarias: ${totalPaginas}`);
 
+    // GUARDAR LA PLANTILLA ORIGINAL VACÍA
+    const plantillaOriginal = pdfDoc.getPages()[0];
+
     // Función para rellenar encabezado
     const fillHeader = (page, height) => {
       if (fields.numero_factura) {
@@ -131,20 +134,16 @@ app.post('/fill-pdf', async (req, res) => {
       }
     };
 
+    // CREAR UN NUEVO PDF PARA EL RESULTADO
+    const nuevoPdfDoc = await PDFDocument.create();
+
     // Procesar páginas
     for (let pageIndex = 0; pageIndex < totalPaginas; pageIndex++) {
-      let currentPage;
+      // Copiar la plantilla ORIGINAL (vacía) para cada página
+      const [paginaCopia] = await nuevoPdfDoc.copyPages(pdfDoc, [0]);
+      nuevoPdfDoc.addPage(paginaCopia);
       
-      if (pageIndex === 0) {
-        // Primera página ya existe
-        currentPage = pdfDoc.getPages()[0];
-      } else {
-        // Copiar la plantilla original para páginas adicionales
-        const [copiedPage] = await pdfDoc.copyPages(pdfDoc, [0]);
-        pdfDoc.addPage(copiedPage);
-        currentPage = pdfDoc.getPages()[pageIndex];
-      }
-
+      const currentPage = nuevoPdfDoc.getPages()[pageIndex];
       const { height } = currentPage.getSize();
 
       // Rellenar encabezado en cada página
@@ -174,7 +173,7 @@ app.post('/fill-pdf', async (req, res) => {
       }
     }
 
-    const modifiedPdfBytes = await pdfDoc.save();
+    const modifiedPdfBytes = await nuevoPdfDoc.save();
     const resultBase64 = Buffer.from(modifiedPdfBytes).toString('base64');
 
     res.json({ success: true, pdf: resultBase64 });
