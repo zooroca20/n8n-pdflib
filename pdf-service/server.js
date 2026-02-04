@@ -52,9 +52,8 @@ app.post('/fill-pdf', async (req, res) => {
         x: coord.x,
         y: coord.y,
         size: fontSize,
-        font: font,
-        color: { r: 0, g: 0, b: 0 }
-      });
+        font: font
+        });
     }
 
     if (fields.fecha) {
