@@ -188,10 +188,9 @@ app.post('/fill-pdf', async (req, res) => {
     };
 
     // CALCULAR TOTAL DE PÁGINAS
-    // Cada albarán usa: 1 línea cabecera + N líneas de productos
     let totalLineasConCabeceras = 0;
     lineasPorAlbaran.forEach(grupo => {
-      totalLineasConCabeceras += 1 + grupo.lineas.length; // 1 cabecera + líneas
+      totalLineasConCabeceras += 1 + grupo.lineas.length;
     });
     const totalPaginas = Math.ceil(totalLineasConCabeceras / LINEAS_POR_PAGINA);
 
@@ -203,7 +202,8 @@ app.post('/fill-pdf', async (req, res) => {
     let lineasEnPagina = 0;
     let pageNumber = 0;
 
-    const crearNuevaPagina = () => {
+    // FUNCIÓN ASYNC PARA CREAR NUEVA PÁGINA
+    const crearNuevaPagina = async () => {
       const [paginaCopia] = await nuevoPdfDoc.copyPages(pdfDoc, [0]);
       nuevoPdfDoc.addPage(paginaCopia);
       pageNumber++;
