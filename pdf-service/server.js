@@ -33,7 +33,6 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     const LINEAS_POR_PAGINA = 11;
-    const ALTURA_PAGINA = 803;
 
     console.log(`Total líneas: ${lineasArray.length}`);
 
@@ -42,29 +41,32 @@ app.post('/fill-pdf', async (req, res) => {
     let albaranActual = null;
     
     lineasArray.forEach(linea => {
-      // DEPURACIÓN: Ver qué datos tienen las líneas
-      console.log('Línea:', {
-        Albaran_Factura: linea.Albaran_Factura,
-        FechaAlbaran_Factura: linea.FechaAlbaran_Factura
+      // USAR LOS NOMBRES CORRECTOS DE LOS CAMPOS
+      const numAlbaran = linea.Albaran_Factura || '';
+      const fechaAlbaran = linea.FechaAlbaran_Factura || '';
+      
+      console.log('Procesando línea:', {
+        Albaran_Factura: numAlbaran,
+        FechaAlbaran_Factura: fechaAlbaran
       });
 
-      const albaranKey = `${linea.Albaran_Factura || ''}_${linea.FechaAlbaran_Factura || ''}`;
+      const albaranKey = `${numAlbaran}_${fechaAlbaran}`;
       
       if (!albaranActual || albaranActual.key !== albaranKey) {
         albaranActual = {
           key: albaranKey,
-          albaran: linea.Albaran_Factura || '',
-          fecha: linea.FechaAlbaran_Factura || '',
+          albaran: numAlbaran,
+          fecha: fechaAlbaran,
           lineas: []
         };
         lineasPorAlbaran.push(albaranActual);
-        console.log('Nuevo albarán detectado:', albaranActual.albaran, albaranActual.fecha);
+        console.log('Nuevo grupo albarán:', { albaran: numAlbaran, fecha: fechaAlbaran });
       }
       
       albaranActual.lineas.push(linea);
     });
 
-    console.log(`Total albaranes: ${lineasPorAlbaran.length}`);
+    console.log(`Total albaranes agrupados: ${lineasPorAlbaran.length}`);
 
     const fillHeader = (page, pageNumber, totalPaginas) => {
       if (fields.numero_factura) {
@@ -113,13 +115,16 @@ app.post('/fill-pdf', async (req, res) => {
     };
 
     const drawAlbaranHeader = (page, albaran, fecha, y) => {
-      // Formatear fecha (quitar la hora si viene con timestamp)
-      const fechaFormateada = String(fecha).split('T')[0];
+      // Formatear fecha (solo YYYY-MM-DD)
+      let fechaFormateada = String(fecha);
+      if (fechaFormateada.includes('T')) {
+        fechaFormateada = fechaFormateada.split('T')[0];
+      }
       
-      // CAMBIO: "Albarán" → "Albaran" (sin acento)
+      // Construir texto SIN acento en Albaran
       const texto = `**** Albaran    ${albaran}     del    ${fechaFormateada}   **   Pedido 0 Fecha 0 *****`;
       
-      console.log('Dibujando cabecera albarán:', texto);
+      console.log('Dibujando cabecera:', texto);
       
       page.drawText(texto, {
         x: 54,
@@ -225,6 +230,8 @@ app.post('/fill-pdf', async (req, res) => {
         await crearNuevaPagina();
       }
 
+      console.log('Dibujando grupo:', { albaran: grupo.albaran, fecha: grupo.fecha, numLineas: grupo.lineas.length });
+      
       drawAlbaranHeader(currentPage, grupo.albaran, grupo.fecha, currentY);
       currentY -= 15;
       lineasEnPagina++;
