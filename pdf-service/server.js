@@ -33,15 +33,34 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     const LINEAS_POR_PAGINA = 11;
-    const totalLineas = lineasArray.length;
-    const totalPaginas = Math.ceil(totalLineas / LINEAS_POR_PAGINA);
     const ALTURA_PAGINA = 803;
 
-    console.log(`Total líneas: ${totalLineas}, Total páginas necesarias: ${totalPaginas}`);
+    console.log(`Total líneas: ${lineasArray.length}`);
 
-    const fillHeader = (page, pageNumber) => {
+    // AGRUPAR LÍNEAS POR ALBARÁN
+    const lineasPorAlbaran = [];
+    let albaranActual = null;
+    
+    lineasArray.forEach(linea => {
+      const albaranKey = `${linea.Albaran_Factura || ''}_${linea.FechaAlbaran_Factura || ''}`;
+      
+      if (!albaranActual || albaranActual.key !== albaranKey) {
+        albaranActual = {
+          key: albaranKey,
+          albaran: linea.Albaran_Factura || '',
+          fecha: linea.FechaAlbaran_Factura || '',
+          lineas: []
+        };
+        lineasPorAlbaran.push(albaranActual);
+      }
+      
+      albaranActual.lineas.push(linea);
+    });
+
+    console.log(`Total albaranes: ${lineasPorAlbaran.length}`);
+
+    const fillHeader = (page, pageNumber, totalPaginas) => {
       // NÚMERO DE FACTURA
-      // Affinity: X=41.1, Y=214.4 → Código: X=41, Y=803-214=589
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
           x: 41,
@@ -52,7 +71,6 @@ app.post('/fill-pdf', async (req, res) => {
       }
 
       // FECHA FACTURA
-      // Affinity: X=82.4, Y=214.4 → Código: X=82, Y=803-214=589
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
@@ -64,7 +82,6 @@ app.post('/fill-pdf', async (req, res) => {
       }
 
       // FORMA DE PAGO
-      // Affinity: X=174.6, Y=214.4 → Código: X=175, Y=803-214=589
       if (fields.forma_pago) {
         page.drawText(String(fields.forma_pago), {
           x: 175,
@@ -74,19 +91,15 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      // VENDEDOR
-      // Affinity: X=374.3, Y=214.4 → Código: X=374, Y=803-214=589
-      if (fields.vendedor) {
-        page.drawText(String(fields.vendedor), {
-          x: 374,
-          y: 589,
-          size: regularFont,
-          font
-        });
-      }
+      // VENDEDOR (siempre "1 Empresa")
+      page.drawText('1 Empresa', {
+        x: 374,
+        y: 589,
+        size: regularFont,
+        font
+      });
 
-      // CONTADOR DE PÁGINAS (formato: 1/2)
-      // Affinity: X=513.1, Y=214.4 → Código: X=513, Y=803-214=589
+      // CONTADOR DE PÁGINAS
       if (totalPaginas > 1) {
         page.drawText(`${pageNumber}/${totalPaginas}`, {
           x: 513,
@@ -95,17 +108,18 @@ app.post('/fill-pdf', async (req, res) => {
           font
         });
       }
+    };
 
-      // ALBARÁN NÚMERO
-      // Affinity: X=131, Y=256.9 → Código: X=131, Y=803-257=546
-      if (fields.albaran) {
-        page.drawText(String(fields.albaran), {
-          x: 131,
-          y: 546,
-          size: smallFont,
-          font
-        });
-      }
+    const drawAlbaranHeader = (page, albaran, fecha, y) => {
+      const fechaFormateada = String(fecha).split('T')[0];
+      const texto = `**** Albarán    ${albaran}     del    ${fechaFormateada}   **   Pedido 0 Fecha 0 *****`;
+      
+      page.drawText(texto, {
+        x: 54,
+        y,
+        size: smallFont,
+        font
+      });
     };
 
     const drawProductLine = (page, linea, y) => {
@@ -173,30 +187,56 @@ app.post('/fill-pdf', async (req, res) => {
       }
     };
 
-    const nuevoPdfDoc = await PDFDocument.create();
+    // CALCULAR TOTAL DE PÁGINAS
+    // Cada albarán usa: 1 línea cabecera + N líneas de productos
+    let totalLineasConCabeceras = 0;
+    lineasPorAlbaran.forEach(grupo => {
+      totalLineasConCabeceras += 1 + grupo.lineas.length; // 1 cabecera + líneas
+    });
+    const totalPaginas = Math.ceil(totalLineasConCabeceras / LINEAS_POR_PAGINA);
 
-    for (let pageIndex = 0; pageIndex < totalPaginas; pageIndex++) {
+    console.log(`Total líneas con cabeceras: ${totalLineasConCabeceras}, Total páginas: ${totalPaginas}`);
+
+    const nuevoPdfDoc = await PDFDocument.create();
+    let currentPage = null;
+    let currentY = 0;
+    let lineasEnPagina = 0;
+    let pageNumber = 0;
+
+    const crearNuevaPagina = () => {
       const [paginaCopia] = await nuevoPdfDoc.copyPages(pdfDoc, [0]);
       nuevoPdfDoc.addPage(paginaCopia);
-      
-      const currentPage = nuevoPdfDoc.getPages()[pageIndex];
-      const pageNumber = pageIndex + 1;
+      pageNumber++;
+      currentPage = nuevoPdfDoc.getPages()[pageNumber - 1];
+      fillHeader(currentPage, pageNumber, totalPaginas);
+      currentY = 543;
+      lineasEnPagina = 0;
+    };
 
-      fillHeader(currentPage, pageNumber);
+    await crearNuevaPagina();
 
-      const startLineIndex = pageIndex * LINEAS_POR_PAGINA;
-      const endLineIndex = Math.min(startLineIndex + LINEAS_POR_PAGINA, totalLineas);
-      const lineasPagina = lineasArray.slice(startLineIndex, endLineIndex);
+    // DIBUJAR ALBARANES Y LÍNEAS
+    for (const grupo of lineasPorAlbaran) {
+      // Verificar si necesitamos nueva página para la cabecera
+      if (lineasEnPagina >= LINEAS_POR_PAGINA) {
+        await crearNuevaPagina();
+      }
 
-      console.log(`Página ${pageNumber}: Líneas ${startLineIndex + 1} a ${endLineIndex}`);
+      // Dibujar cabecera del albarán
+      drawAlbaranHeader(currentPage, grupo.albaran, grupo.fecha, currentY);
+      currentY -= 15;
+      lineasEnPagina++;
 
-      const startY = 490;
-      const lineHeight = 15;
+      // Dibujar líneas del albarán
+      for (const linea of grupo.lineas) {
+        if (lineasEnPagina >= LINEAS_POR_PAGINA) {
+          await crearNuevaPagina();
+        }
 
-      lineasPagina.forEach((linea, index) => {
-        const y = startY - (index * lineHeight);
-        drawProductLine(currentPage, linea, y);
-      });
+        drawProductLine(currentPage, linea, currentY);
+        currentY -= 15;
+        lineasEnPagina++;
+      }
     }
 
     const modifiedPdfBytes = await nuevoPdfDoc.save();
