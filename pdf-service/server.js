@@ -8,7 +8,7 @@ app.use(express.json({ limit: '50mb' }));
 
 app.post('/fill-pdf', async (req, res) => {
   try {
-    const { pdfBase64, fields, lineas } = req.body;
+    const { pdfBase64, fields } = req.body;
 
     if (!pdfBase64 || !fields) {
       return res.status(400).json({ error: 'Missing pdfBase64 or fields' });
@@ -70,11 +70,22 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     // LÍNEAS DE PRODUCTOS
+    const lineas = fields.lineas || [];
     console.log("Lineas recibidas:", lineas);
     console.log("Tipo de lineas:", typeof lineas);
     console.log("Es array?:", Array.isArray(lineas));
 
-    const lineasArray = lineas || [];
+    let lineasArray = [];
+    try {
+      if (typeof lineas === 'string') {
+        lineasArray = JSON.parse(lineas);
+      } else {
+        lineasArray = lineas || [];
+      }
+    } catch (e) {
+      console.error("Error parseando lineas:", e);
+    }
+
     console.log("Cantidad de lineas:", lineasArray.length);
 
     const startY = height - 335;
