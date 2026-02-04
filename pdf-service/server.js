@@ -21,83 +21,97 @@ app.post('/fill-pdf', async (req, res) => {
     const { width, height } = firstPage.getSize();
 
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontSize = 10;
+    const smallFont = 9;
+    const regularFont = 10;
 
-    // Coordenadas aproximadas basadas en tu PDF (en puntos)
-    // Necesitarás ajustar estos valores según tu plantilla
-    const coordinates = {
-      numero_factura: { x: 95, y: height - 235 },
-      fecha: { x: 160, y: height - 235 },
-      forma_pago: { x: 280, y: height - 235 },
-      vendedor: { x: 480, y: height - 235 },
-      pagina: { x: 750, y: height - 235 },
-      
-      nombre_cliente: { x: 50, y: height - 280 },
-      domicilio_cliente: { x: 50, y: height - 295 },
-      
-      // Campos de líneas de productos (ejemplo para primera línea)
-      cajas_1: { x: 65, y: height - 330 },
-      bruto_1: { x: 105, y: height - 330 },
-      tara_1: { x: 150, y: height - 330 },
-      neto_1: { x: 195, y: height - 330 },
-      articulo_1: { x: 260, y: height - 330 },
-      precio_1: { x: 570, y: height - 330 },
-      importe_1: { x: 625, y: height - 330 },
-    };
-
-    // Rellenar encabezado
+    // ENCABEZADO
     if (fields.numero_factura) {
-      const coord = coordinates.numero_factura;
       firstPage.drawText(String(fields.numero_factura), {
-        x: coord.x,
-        y: coord.y,
-        size: fontSize,
-        font: font
-        });
+        x: 95, y: height - 235, size: regularFont, font
+      });
     }
 
     if (fields.fecha) {
-      const coord = coordinates.fecha;
-      firstPage.drawText(String(fields.fecha).split('T')[0], {
-        x: coord.x,
-        y: coord.y,
-        size: fontSize,
-        font: font,
+      const fechaStr = String(fields.fecha).split('T')[0];
+      firstPage.drawText(fechaStr, {
+        x: 160, y: height - 235, size: regularFont, font
       });
     }
 
     if (fields.forma_pago) {
-      const coord = coordinates.forma_pago;
       firstPage.drawText(String(fields.forma_pago), {
-        x: coord.x,
-        y: coord.y,
-        size: fontSize,
-        font: font,
+        x: 280, y: height - 235, size: regularFont, font
       });
     }
 
     if (fields.nombre_cliente) {
-      const coord = coordinates.nombre_cliente;
       firstPage.drawText(String(fields.nombre_cliente), {
-        x: coord.x,
-        y: coord.y,
-        size: fontSize,
-        font: font,
+        x: 50, y: height - 280, size: smallFont, font
       });
     }
 
     if (fields.domicilio_cliente) {
-      const coord = coordinates.domicilio_cliente;
       firstPage.drawText(String(fields.domicilio_cliente), {
-        x: coord.x,
-        y: coord.y,
-        size: fontSize,
-        font: font,
+        x: 50, y: height - 295, size: smallFont, font
       });
     }
 
-    // Aplanar el PDF (opcional, para hacer que no se pueda editar)
-    // await pdfDoc.flatten();
+    if (fields.albaran) {
+      firstPage.drawText(String(fields.albaran), {
+        x: 50, y: height - 315, size: smallFont, font
+      });
+    }
+
+    if (fields.fecha_albaran) {
+      const fechaAlb = String(fields.fecha_albaran).split('T')[0];
+      firstPage.drawText(fechaAlb, {
+        x: 180, y: height - 315, size: smallFont, font
+      });
+    }
+
+    // LÍNEAS DE PRODUCTOS
+    const lineas = fields.lineas || [];
+    const startY = height - 335;
+    const lineHeight = 15;
+
+    lineas.forEach((linea, index) => {
+      const y = startY - (index * lineHeight);
+
+      // Cajas
+      firstPage.drawText(String(linea.Cajas || ''), {
+        x: 65, y, size: smallFont, font
+      });
+
+      // Bruto
+      firstPage.drawText(String(linea.Bruto || ''), {
+        x: 105, y, size: smallFont, font
+      });
+
+      // Tara
+      firstPage.drawText(String(linea.Tara || ''), {
+        x: 150, y, size: smallFont, font
+      });
+
+      // Neto
+      firstPage.drawText(String(linea.Neto || ''), {
+        x: 195, y, size: smallFont, font
+      });
+
+      // Artículo
+      firstPage.drawText(String(linea.Articulo || ''), {
+        x: 260, y, size: smallFont, font
+      });
+
+      // Precio
+      firstPage.drawText(String(linea.Precio || ''), {
+        x: 570, y, size: smallFont, font
+      });
+
+      // Importe
+      firstPage.drawText(String(linea.Importe || ''), {
+        x: 625, y, size: smallFont, font
+      });
+    });
 
     const modifiedPdfBytes = await pdfDoc.save();
     const resultBase64 = Buffer.from(modifiedPdfBytes).toString('base64');
