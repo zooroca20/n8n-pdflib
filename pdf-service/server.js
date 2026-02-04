@@ -35,38 +35,58 @@ app.post('/fill-pdf', async (req, res) => {
     const LINEAS_POR_PAGINA = 11;
     const totalLineas = lineasArray.length;
     const totalPaginas = Math.ceil(totalLineas / LINEAS_POR_PAGINA);
+    const ALTURA_PAGINA = 803;
 
     console.log(`Total líneas: ${totalLineas}, Total páginas necesarias: ${totalPaginas}`);
 
     const fillHeader = (page) => {
+      // NÚMERO DE FACTURA
+      // Affinity: X=44.3, Y=213.3 → Código: X=44, Y=803-213=590
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
-          x: 47,
-          y: 591,
+          x: 44,
+          y: 590,
           size: regularFont,
           font
         });
       }
 
+      // FECHA FACTURA
+      // Affinity: X=101.3, Y=213.3 → Código: X=101, Y=803-213=590
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
-          x: 172,
-          y: 591,
+          x: 101,
+          y: 590,
           size: regularFont,
           font
         });
       }
 
+      // FORMA DE PAGO
+      // Affinity: X=186.1, Y=213.3 → Código: X=186, Y=803-213=590
       if (fields.forma_pago) {
         page.drawText(String(fields.forma_pago), {
-          x: 315,
-          y: 591,
+          x: 186,
+          y: 590,
           size: regularFont,
           font
         });
       }
 
+      // ALBARÁN NÚMERO
+      // Affinity: X=131, Y=256.9 → Código: X=131, Y=803-257=546
+      if (fields.albaran) {
+        page.drawText(String(fields.albaran), {
+          x: 131,
+          y: 546,
+          size: smallFont,
+          font
+        });
+      }
+
+      // RESTO DE CAMPOS (temporalmente desactivados)
+      /*
       if (fields.nombre_cliente) {
         page.drawText(String(fields.nombre_cliente), {
           x: 85,
@@ -85,15 +105,6 @@ app.post('/fill-pdf', async (req, res) => {
         });
       }
 
-      if (fields.albaran) {
-        page.drawText(String(fields.albaran), {
-          x: 85,
-          y: 512,
-          size: smallFont,
-          font
-        });
-      }
-
       if (fields.fecha_albaran) {
         const fechaAlb = String(fields.fecha_albaran).split('T')[0];
         page.drawText(fechaAlb, {
@@ -103,6 +114,7 @@ app.post('/fill-pdf', async (req, res) => {
           font
         });
       }
+      */
     };
 
     const drawProductLine = (page, linea, y) => {
@@ -197,7 +209,7 @@ app.post('/fill-pdf', async (req, res) => {
       if (totalPaginas > 1) {
         currentPage.drawText(`Página ${pageIndex + 1} de ${totalPaginas}`, {
           x: 500,
-          y: 591,
+          y: 590,
           size: smallFont,
           font
         });
