@@ -70,47 +70,79 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     // LÍNEAS DE PRODUCTOS
-    const lineas = JSON.parse(fields.lineas) || [];
+    console.log("Fields recibidos:", Object.keys(fields));
+    console.log("Tipo de lineas:", typeof fields.lineas);
+    console.log("Lineas recibidas:", fields.lineas);
+    
+    let lineas = [];
+    try {
+      if (typeof fields.lineas === 'string') {
+        lineas = JSON.parse(fields.lineas);
+      } else {
+        lineas = fields.lineas || [];
+      }
+    } catch (e) {
+      console.error("Error parseando lineas:", e);
+    }
+
+    console.log("Lineas parseadas:", lineas);
+    console.log("Cantidad de lineas:", lineas.length);
+
     const startY = height - 335;
     const lineHeight = 15;
 
     lineas.forEach((linea, index) => {
       const y = startY - (index * lineHeight);
+      console.log(`Escribiendo línea ${index} en Y=${y}`);
 
       // Cajas
-      firstPage.drawText(String(linea.Cajas || ''), {
-        x: 65, y, size: smallFont, font
-      });
+      if (linea.Cajas) {
+        firstPage.drawText(String(linea.Cajas), {
+          x: 65, y, size: smallFont, font
+        });
+      }
 
       // Bruto
-      firstPage.drawText(String(linea.Bruto || ''), {
-        x: 105, y, size: smallFont, font
-      });
+      if (linea.Bruto) {
+        firstPage.drawText(String(linea.Bruto), {
+          x: 105, y, size: smallFont, font
+        });
+      }
 
       // Tara
-      firstPage.drawText(String(linea.Tara || ''), {
-        x: 150, y, size: smallFont, font
-      });
+      if (linea.Tara) {
+        firstPage.drawText(String(linea.Tara), {
+          x: 150, y, size: smallFont, font
+        });
+      }
 
       // Neto
-      firstPage.drawText(String(linea.Neto || ''), {
-        x: 195, y, size: smallFont, font
-      });
+      if (linea.Neto) {
+        firstPage.drawText(String(linea.Neto), {
+          x: 195, y, size: smallFont, font
+        });
+      }
 
       // Artículo
-      firstPage.drawText(String(linea.Articulo || ''), {
-        x: 260, y, size: smallFont, font
-      });
+      if (linea.Articulo) {
+        firstPage.drawText(String(linea.Articulo), {
+          x: 260, y, size: smallFont, font
+        });
+      }
 
       // Precio
-      firstPage.drawText(String(linea.Precio || ''), {
-        x: 570, y, size: smallFont, font
-      });
+      if (linea.Precio) {
+        firstPage.drawText(String(linea.Precio), {
+          x: 570, y, size: smallFont, font
+        });
+      }
 
       // Importe
-      firstPage.drawText(String(linea.Importe || ''), {
-        x: 625, y, size: smallFont, font
-      });
+      if (linea.Importe) {
+        firstPage.drawText(String(linea.Importe), {
+          x: 625, y, size: smallFont, font
+        });
+      }
     });
 
     const modifiedPdfBytes = await pdfDoc.save();
