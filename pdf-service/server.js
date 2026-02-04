@@ -8,7 +8,7 @@ app.use(express.json({ limit: '50mb' }));
 
 app.post('/fill-pdf', async (req, res) => {
   try {
-    const { pdfBase64, fields } = req.body;
+    const { pdfBase64, fields, lineas } = req.body;
 
     if (!pdfBase64 || !fields) {
       return res.status(400).json({ error: 'Missing pdfBase64 or fields' });
@@ -70,33 +70,22 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     // LÍNEAS DE PRODUCTOS
-    console.log("Fields recibidos:", Object.keys(fields));
-    console.log("Tipo de lineas:", typeof fields.lineas);
-    console.log("Lineas recibidas:", fields.lineas);
-    
-    let lineas = [];
-    try {
-      if (typeof fields.lineas === 'string') {
-        lineas = JSON.parse(fields.lineas);
-      } else {
-        lineas = fields.lineas || [];
-      }
-    } catch (e) {
-      console.error("Error parseando lineas:", e);
-    }
+    console.log("Lineas recibidas:", lineas);
+    console.log("Tipo de lineas:", typeof lineas);
+    console.log("Es array?:", Array.isArray(lineas));
 
-    console.log("Lineas parseadas:", lineas);
-    console.log("Cantidad de lineas:", lineas.length);
+    const lineasArray = lineas || [];
+    console.log("Cantidad de lineas:", lineasArray.length);
 
     const startY = height - 335;
     const lineHeight = 15;
 
-    lineas.forEach((linea, index) => {
+    lineasArray.forEach((linea, index) => {
       const y = startY - (index * lineHeight);
-      console.log(`Escribiendo línea ${index} en Y=${y}`);
+      console.log(`Línea ${index}:`, linea);
 
       // Cajas
-      if (linea.Cajas) {
+      if (linea.Cajas !== undefined && linea.Cajas !== null) {
         firstPage.drawText(String(linea.Cajas), {
           x: 65, y, size: smallFont, font
         });
@@ -150,7 +139,7 @@ app.post('/fill-pdf', async (req, res) => {
 
     res.json({ success: true, pdf: resultBase64 });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error completo:", error);
     res.status(500).json({ error: error.message });
   }
 });
