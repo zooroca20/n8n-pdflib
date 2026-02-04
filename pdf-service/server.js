@@ -41,23 +41,23 @@ app.post('/fill-pdf', async (req, res) => {
 
     const fillHeader = (page) => {
       // NÚMERO DE FACTURA
-      // Affinity: X=44.3, Y=213.3 → Código: X=44, Y=803-213=590
+      // Affinity: X=29.2, Y=207.8 → Código: X=29, Y=803-208=595
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
-          x: 44,
-          y: 590,
+          x: 29,
+          y: 595,
           size: regularFont,
           font
         });
       }
 
       // FECHA FACTURA
-      // Affinity: X=101.3, Y=213.3 → Código: X=101, Y=803-213=590
+      // Affinity: X=84.7, Y=207.8 → Código: X=85, Y=803-208=595
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
-          x: 101,
-          y: 590,
+          x: 85,
+          y: 595,
           size: regularFont,
           font
         });
@@ -84,37 +84,6 @@ app.post('/fill-pdf', async (req, res) => {
           font
         });
       }
-
-      // RESTO DE CAMPOS (temporalmente desactivados)
-      /*
-      if (fields.nombre_cliente) {
-        page.drawText(String(fields.nombre_cliente), {
-          x: 85,
-          y: 547,
-          size: smallFont,
-          font
-        });
-      }
-
-      if (fields.domicilio_cliente) {
-        page.drawText(String(fields.domicilio_cliente), {
-          x: 85,
-          y: 532,
-          size: smallFont,
-          font
-        });
-      }
-
-      if (fields.fecha_albaran) {
-        const fechaAlb = String(fields.fecha_albaran).split('T')[0];
-        page.drawText(fechaAlb, {
-          x: 220,
-          y: 512,
-          size: smallFont,
-          font
-        });
-      }
-      */
     };
 
     const drawProductLine = (page, linea, y) => {
@@ -209,7 +178,7 @@ app.post('/fill-pdf', async (req, res) => {
       if (totalPaginas > 1) {
         currentPage.drawText(`Página ${pageIndex + 1} de ${totalPaginas}`, {
           x: 500,
-          y: 590,
+          y: 595,
           size: smallFont,
           font
         });
