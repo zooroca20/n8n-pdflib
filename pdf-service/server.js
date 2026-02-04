@@ -70,7 +70,7 @@ app.post('/fill-pdf', async (req, res) => {
     }
 
     // LÍNEAS DE PRODUCTOS
-    const lineas = fields.lineas || [];
+    const lineas = JSON.parse(fields.lineas) || [];
     const startY = height - 335;
     const lineHeight = 15;
 
