@@ -39,36 +39,58 @@ app.post('/fill-pdf', async (req, res) => {
 
     console.log(`Total líneas: ${totalLineas}, Total páginas necesarias: ${totalPaginas}`);
 
-    const fillHeader = (page) => {
+    const fillHeader = (page, pageNumber) => {
       // NÚMERO DE FACTURA
-      // Affinity: X=41.1, Y=211.4 → Código: X=41, Y=803-211=592
+      // Affinity: X=41.1, Y=214.4 → Código: X=41, Y=803-214=589
       if (fields.numero_factura) {
         page.drawText(String(fields.numero_factura), {
           x: 41,
-          y: 592,
+          y: 589,
           size: regularFont,
           font
         });
       }
 
       // FECHA FACTURA
-      // Affinity: X=82.4, Y=211.4 → Código: X=82, Y=803-211=592
+      // Affinity: X=82.4, Y=214.4 → Código: X=82, Y=803-214=589
       if (fields.fecha) {
         const fechaStr = String(fields.fecha).split('T')[0];
         page.drawText(fechaStr, {
           x: 82,
-          y: 592,
+          y: 589,
           size: regularFont,
           font
         });
       }
 
       // FORMA DE PAGO
-      // Affinity: X=186.1, Y=213.3 → Código: X=186, Y=803-213=590
+      // Affinity: X=174.6, Y=214.4 → Código: X=175, Y=803-214=589
       if (fields.forma_pago) {
         page.drawText(String(fields.forma_pago), {
-          x: 186,
-          y: 590,
+          x: 175,
+          y: 589,
+          size: regularFont,
+          font
+        });
+      }
+
+      // VENDEDOR
+      // Affinity: X=374.3, Y=214.4 → Código: X=374, Y=803-214=589
+      if (fields.vendedor) {
+        page.drawText(String(fields.vendedor), {
+          x: 374,
+          y: 589,
+          size: regularFont,
+          font
+        });
+      }
+
+      // CONTADOR DE PÁGINAS (formato: 1/2)
+      // Affinity: X=513.1, Y=214.4 → Código: X=513, Y=803-214=589
+      if (totalPaginas > 1) {
+        page.drawText(`${pageNumber}/${totalPaginas}`, {
+          x: 513,
+          y: 589,
           size: regularFont,
           font
         });
@@ -158,14 +180,15 @@ app.post('/fill-pdf', async (req, res) => {
       nuevoPdfDoc.addPage(paginaCopia);
       
       const currentPage = nuevoPdfDoc.getPages()[pageIndex];
+      const pageNumber = pageIndex + 1;
 
-      fillHeader(currentPage);
+      fillHeader(currentPage, pageNumber);
 
       const startLineIndex = pageIndex * LINEAS_POR_PAGINA;
       const endLineIndex = Math.min(startLineIndex + LINEAS_POR_PAGINA, totalLineas);
       const lineasPagina = lineasArray.slice(startLineIndex, endLineIndex);
 
-      console.log(`Página ${pageIndex + 1}: Líneas ${startLineIndex + 1} a ${endLineIndex}`);
+      console.log(`Página ${pageNumber}: Líneas ${startLineIndex + 1} a ${endLineIndex}`);
 
       const startY = 490;
       const lineHeight = 15;
@@ -174,15 +197,6 @@ app.post('/fill-pdf', async (req, res) => {
         const y = startY - (index * lineHeight);
         drawProductLine(currentPage, linea, y);
       });
-
-      if (totalPaginas > 1) {
-        currentPage.drawText(`Página ${pageIndex + 1} de ${totalPaginas}`, {
-          x: 500,
-          y: 592,
-          size: smallFont,
-          font
-        });
-      }
     }
 
     const modifiedPdfBytes = await nuevoPdfDoc.save();
