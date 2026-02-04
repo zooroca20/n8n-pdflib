@@ -16,136 +16,163 @@ app.post('/fill-pdf', async (req, res) => {
 
     const pdfBytes = Buffer.from(pdfBase64, 'base64');
     const pdfDoc = await PDFDocument.load(pdfBytes);
-    const pages = pdfDoc.getPages();
-    const firstPage = pages[0];
-    const { width, height } = firstPage.getSize();
-
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const smallFont = 9;
     const regularFont = 10;
 
-    // ENCABEZADO
-    if (fields.numero_factura) {
-      firstPage.drawText(String(fields.numero_factura), {
-        x: 95, y: height - 235, size: regularFont, font
-      });
-    }
-
-    if (fields.fecha) {
-      const fechaStr = String(fields.fecha).split('T')[0];
-      firstPage.drawText(fechaStr, {
-        x: 160, y: height - 235, size: regularFont, font
-      });
-    }
-
-    if (fields.forma_pago) {
-      firstPage.drawText(String(fields.forma_pago), {
-        x: 280, y: height - 235, size: regularFont, font
-      });
-    }
-
-    if (fields.nombre_cliente) {
-      firstPage.drawText(String(fields.nombre_cliente), {
-        x: 50, y: height - 280, size: smallFont, font
-      });
-    }
-
-    if (fields.domicilio_cliente) {
-      firstPage.drawText(String(fields.domicilio_cliente), {
-        x: 50, y: height - 295, size: smallFont, font
-      });
-    }
-
-    if (fields.albaran) {
-      firstPage.drawText(String(fields.albaran), {
-        x: 50, y: height - 315, size: smallFont, font
-      });
-    }
-
-    if (fields.fecha_albaran) {
-      const fechaAlb = String(fields.fecha_albaran).split('T')[0];
-      firstPage.drawText(fechaAlb, {
-        x: 180, y: height - 315, size: smallFont, font
-      });
-    }
-
-    // LÍNEAS DE PRODUCTOS
-    let lineas = fields.lineas || [];
-    console.log("Lineas recibidas:", lineas);
-    console.log("Tipo de lineas:", typeof lineas);
-
+    // Parsear líneas
     let lineasArray = [];
     try {
-      if (typeof lineas === 'string') {
-        lineasArray = JSON.parse(lineas);
-      } else if (Array.isArray(lineas)) {
-        lineasArray = lineas;
-      } else {
-        lineasArray = [];
+      if (typeof fields.lineas === 'string') {
+        lineasArray = JSON.parse(fields.lineas);
+      } else if (Array.isArray(fields.lineas)) {
+        lineasArray = fields.lineas;
       }
     } catch (e) {
       console.error("Error parseando lineas:", e);
       lineasArray = [];
     }
 
-    console.log("Cantidad de lineas parseadas:", lineasArray.length);
+    const LINEAS_POR_PAGINA = 11;
+    const totalLineas = lineasArray.length;
+    const totalPaginas = Math.ceil(totalLineas / LINEAS_POR_PAGINA);
 
-    const startY = height - 335;
-    const lineHeight = 15;
+    console.log(`Total líneas: ${totalLineas}, Total páginas necesarias: ${totalPaginas}`);
 
-    lineasArray.forEach((linea, index) => {
-      const y = startY - (index * lineHeight);
-      console.log(`Escribiendo línea ${index} en Y=${y}:`, linea);
+    // Función para rellenar encabezado
+    const fillHeader = (page, height) => {
+      if (fields.numero_factura) {
+        page.drawText(String(fields.numero_factura), {
+          x: 95, y: height - 235, size: regularFont, font
+        });
+      }
 
-      // Cajas
+      if (fields.fecha) {
+        const fechaStr = String(fields.fecha).split('T')[0];
+        page.drawText(fechaStr, {
+          x: 160, y: height - 235, size: regularFont, font
+        });
+      }
+
+      if (fields.forma_pago) {
+        page.drawText(String(fields.forma_pago), {
+          x: 280, y: height - 235, size: regularFont, font
+        });
+      }
+
+      if (fields.nombre_cliente) {
+        page.drawText(String(fields.nombre_cliente), {
+          x: 50, y: height - 280, size: smallFont, font
+        });
+      }
+
+      if (fields.domicilio_cliente) {
+        page.drawText(String(fields.domicilio_cliente), {
+          x: 50, y: height - 295, size: smallFont, font
+        });
+      }
+
+      if (fields.albaran) {
+        page.drawText(String(fields.albaran), {
+          x: 50, y: height - 315, size: smallFont, font
+        });
+      }
+
+      if (fields.fecha_albaran) {
+        const fechaAlb = String(fields.fecha_albaran).split('T')[0];
+        page.drawText(fechaAlb, {
+          x: 180, y: height - 315, size: smallFont, font
+        });
+      }
+    };
+
+    // Función para escribir una línea de producto
+    const drawProductLine = (page, linea, y) => {
       if (linea.Cajas !== undefined && linea.Cajas !== null) {
-        firstPage.drawText(String(linea.Cajas), {
+        page.drawText(String(linea.Cajas), {
           x: 65, y, size: smallFont, font
         });
       }
 
-      // Bruto
       if (linea.Bruto) {
-        firstPage.drawText(String(linea.Bruto), {
+        page.drawText(String(linea.Bruto), {
           x: 105, y, size: smallFont, font
         });
       }
 
-      // Tara
       if (linea.Tara) {
-        firstPage.drawText(String(linea.Tara), {
+        page.drawText(String(linea.Tara), {
           x: 150, y, size: smallFont, font
         });
       }
 
-      // Neto
       if (linea.Neto) {
-        firstPage.drawText(String(linea.Neto), {
+        page.drawText(String(linea.Neto), {
           x: 195, y, size: smallFont, font
         });
       }
 
-      // Artículo
       if (linea.Articulo) {
-        firstPage.drawText(String(linea.Articulo), {
+        page.drawText(String(linea.Articulo), {
           x: 260, y, size: smallFont, font
         });
       }
 
-      // Precio
       if (linea.Precio) {
-        firstPage.drawText(String(linea.Precio), {
+        page.drawText(String(linea.Precio), {
           x: 570, y, size: smallFont, font
         });
       }
 
-      // Importe
       if (linea.Importe) {
-        firstPage.drawText(String(linea.Importe), {
+        page.drawText(String(linea.Importe), {
           x: 625, y, size: smallFont, font
         });
       }
-    });
+    };
+
+    // Procesar páginas
+    for (let pageIndex = 0; pageIndex < totalPaginas; pageIndex++) {
+      let currentPage;
+      
+      if (pageIndex === 0) {
+        // Primera página ya existe
+        currentPage = pdfDoc.getPages()[0];
+      } else {
+        // Copiar la plantilla original para páginas adicionales
+        const [copiedPage] = await pdfDoc.copyPages(pdfDoc, [0]);
+        pdfDoc.addPage(copiedPage);
+        currentPage = pdfDoc.getPages()[pageIndex];
+      }
+
+      const { height } = currentPage.getSize();
+
+      // Rellenar encabezado en cada página
+      fillHeader(currentPage, height);
+
+      // Calcular qué líneas van en esta página
+      const startLineIndex = pageIndex * LINEAS_POR_PAGINA;
+      const endLineIndex = Math.min(startLineIndex + LINEAS_POR_PAGINA, totalLineas);
+      const lineasPagina = lineasArray.slice(startLineIndex, endLineIndex);
+
+      console.log(`Página ${pageIndex + 1}: Líneas ${startLineIndex + 1} a ${endLineIndex}`);
+
+      // Dibujar líneas de productos
+      const startY = height - 335;
+      const lineHeight = 15;
+
+      lineasPagina.forEach((linea, index) => {
+        const y = startY - (index * lineHeight);
+        drawProductLine(currentPage, linea, y);
+      });
+
+      // Agregar número de página si hay más de una
+      if (totalPaginas > 1) {
+        currentPage.drawText(`Página ${pageIndex + 1} de ${totalPaginas}`, {
+          x: 50, y: 30, size: smallFont, font
+        });
+      }
+    }
 
     const modifiedPdfBytes = await pdfDoc.save();
     const resultBase64 = Buffer.from(modifiedPdfBytes).toString('base64');
